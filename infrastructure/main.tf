@@ -1,6 +1,6 @@
 # Get machine ip on run
-data "http" "local_ip"{
-  url ="https://checkip.amazonaws.com"
+data "http" "local_ip" {
+  url = "https://checkip.amazonaws.com"
 
   lifecycle {
     postcondition {
@@ -21,25 +21,25 @@ locals {
 
 # Create vpc for infra
 resource "aws_vpc" "iac_lab_vpc" {
-  cidr_block=var.vpc_cidr
+  cidr_block           = var.vpc_cidr
   enable_dns_support   = true
   enable_dns_hostnames = true
 
   tags = {
-    name = "aws_vpc"
+    Name = "aws_vpc"
   }
 }
 
 # Create public subnet for ec2 instance inside vpc
 resource "aws_subnet" "iac_ec2_pub_subnet" {
-  vpc_id=aws_vpc.iac_lab_vpc.id
-  cidr_block=var.public_subnet_cidr
+  vpc_id                  = aws_vpc.iac_lab_vpc.id
+  cidr_block              = var.public_subnet_cidr
   map_public_ip_on_launch = true
   availability_zone       = var.availability_zone
   tags = {
-      Name= "aws_subnet"
-      
-    }
+    Name = "aws_subnet"
+
+  }
 
 }
 
@@ -48,9 +48,9 @@ resource "aws_internet_gateway" "internet_gw" {
   vpc_id = aws_vpc.iac_lab_vpc.id
 
   tags = {
-      Name= "internet_gw"
-      
-    }
+    Name = "internet_gw"
+
+  }
 }
 
 # route table tells where connection requests are forwarded based off the detination IP
@@ -63,9 +63,9 @@ resource "aws_route_table" "route_tb" {
   }
 
   tags = {
-      Name= "route_tb"
-      
-    }
+    Name = "route_tb"
+
+  }
 }
 
 # Associate rt with public subnet
@@ -112,9 +112,9 @@ resource "aws_security_group" "iac_ec2_sg" {
   }
 
   tags = {
-      Name= "iac_ec2_sg"
-      
-    }
+    Name = "iac_ec2_sg"
+
+  }
 }
 
 # Generate an SSH key pair
@@ -147,7 +147,7 @@ resource "aws_instance" "iac_lab_ec2" {
   key_name                    = aws_key_pair.lab_key.key_name
 
   tags = {
-      Name= "iac_lab_ec2"
-    }
+    Name = "iac_lab_ec2"
+  }
 }
 
