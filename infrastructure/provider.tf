@@ -1,8 +1,10 @@
 provider "aws" {
-    region="eu-west-1" 
-    default_tags {
-        tags={
-            Project=var.lab_tag
-        }
+  region = var.aws_region
+  default_tags {
+    tags = {
+      lab   = var.lab_tag
+      owner = var.owner_tag
     }
+
+  }
 }
