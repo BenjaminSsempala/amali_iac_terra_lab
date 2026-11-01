@@ -1,5 +1,5 @@
 terraform {
-  required_version = ">=1.5.0"
+  required_version = ">=1.11.0"
 
   required_providers {
     aws = {
@@ -25,10 +25,15 @@ terraform {
   }
 
   backend "s3" {
-    bucket         = "amali-iac-lab"
-    region         = "eu-west-1"
-    key            = "iacLab/terraform.tfstate"
+    bucket  = "amali-iac-lab"
+    region  = "eu-west-1"
+    key     = "iacLab/terraform.tfstate"
+    encrypt = true
+
+    # S3-native locking (Terraform 1.11+). dynamodb_table is deprecated but
+    # kept because this lab requires the DynamoDB lock table; with both set,
+    # Terraform takes both locks.
+    use_lockfile   = true
     dynamodb_table = "terraform_remote_backend_locks"
-    encrypt        = true
   }
 }

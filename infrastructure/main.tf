@@ -87,34 +87,36 @@ resource "aws_security_group" "iac_ec2_sg" {
     }
   }
 
-  ingress {
-    description = "SSH from my IP"
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = [local.my_ip_cidr]
-  }
-
-  ingress {
-    description = "HTTP from the internet"
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  egress {
-    description = "Allow outbound traffic"
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
   tags = {
     Name = "iac_ec2_sg"
 
   }
+}
+
+# Rules are separate resources, as the AWS provider docs recommend over inline ingress/egress blocks
+resource "aws_vpc_security_group_ingress_rule" "ssh" {
+  security_group_id = aws_security_group.iac_ec2_sg.id
+  description       = "SSH from my IP"
+  cidr_ipv4         = local.my_ip_cidr
+  from_port         = 22
+  to_port           = 22
+  ip_protocol       = "tcp"
+}
+
+resource "aws_vpc_security_group_ingress_rule" "http" {
+  security_group_id = aws_security_group.iac_ec2_sg.id
+  description       = "HTTP from the internet"
+  cidr_ipv4         = "0.0.0.0/0"
+  from_port         = 80
+  to_port           = 80
+  ip_protocol       = "tcp"
+}
+
+resource "aws_vpc_security_group_egress_rule" "all" {
+  security_group_id = aws_security_group.iac_ec2_sg.id
+  description       = "Allow outbound traffic"
+  cidr_ipv4         = "0.0.0.0/0"
+  ip_protocol       = "-1"
 }
 
 # Generate an SSH key pair
@@ -138,13 +140,34 @@ resource "local_sensitive_file" "private_key" {
   file_permission = "0400"
 }
 
+# Latest Amazon Linux 2023 AMI, so there is no hard-coded AMI id to go stale
+data "aws_ssm_parameter" "al2023_ami" {
+  name = var.ami_ssm_parameter
+}
+
 resource "aws_instance" "iac_lab_ec2" {
-  ami                         = var.ami_id
+  ami                         = data.aws_ssm_parameter.al2023_ami.insecure_value
   instance_type               = var.instance_type
   subnet_id                   = aws_subnet.iac_ec2_pub_subnet.id
   vpc_security_group_ids      = [aws_security_group.iac_ec2_sg.id]
   associate_public_ip_address = true
   key_name                    = aws_key_pair.lab_key.key_name
+
+  # T3 instances default to "unlimited" CPU credits, which can be billed; standard caps them
+  credit_specification {
+    cpu_credits = "standard"
+  }
+
+  # Require IMDSv2 tokens for the instance metadata service
+  metadata_options {
+    http_endpoint = "enabled"
+    http_tokens   = "required"
+  }
+
+  # Encrypt the root disk (EBS encryption by default is off in this account)
+  root_block_device {
+    encrypted = true
+  }
 
   tags = {
     Name = "iac_lab_ec2"

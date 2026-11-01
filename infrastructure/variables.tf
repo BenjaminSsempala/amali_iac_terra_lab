@@ -21,8 +21,10 @@ variable "lab_tag" {
   default = "iac_lab"
 }
 
-variable "ami_id" {
-  type = string
+variable "ami_ssm_parameter" {
+  description = "Public SSM parameter that always points at the latest Amazon Linux 2023 AMI"
+  type        = string
+  default     = "/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64"
 }
 
 
@@ -39,9 +41,9 @@ variable "public_subnet_cidr" {
 }
 
 variable "instance_type" {
-  description = "EC2 instance type"
+  description = "EC2 instance type (t3.micro is free tier for accounts created after July 2025)"
   type        = string
-  default     = "t2.micro"
+  default     = "t3.micro"
 }
 
 variable "existing_public_key_path" {
